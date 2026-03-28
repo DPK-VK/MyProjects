@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Premium Growth Forecasting</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Insurance Premium Growth Forecasting</h1>
+            <p class="header-subtitle">Advanced forecasting models for insurance premium nominal growth rate analysis</p>
+        </header>
+
+        <!-- File Upload Section -->
+        <section class="section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>1. Data Upload</h2>
+                </div>
+                <div class="card__body">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <div class="upload-icon">📁</div>
+                            <p class="upload-text">Drop your Excel or CSV file here, or click to browse</p>
+                            <p class="upload-instructions">
+                                <strong>Data Format:</strong><br>
+                                Column A: Years | Column B: Nominal Premium Growth Rate (target) | Column C+: Macro indicators
+                            </p>
+                            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+                            <button type="button" class="btn btn--outline" onclick="document.getElementById('fileInput').click()">
+                                Choose File
+                            </button>
+                        </div>
+                    </div>
+                    <div id="uploadStatus" class="upload-status hidden"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Preview Section -->
+        <section class="section hidden" id="dataPreviewSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>2. Data Preview & Summary</h2>
+                </div>
+                <div class="card__body">
+                    <div class="data-summary" id="dataSummary"></div>
+                    <div class="data-preview-container">
+                        <h3>Data Preview</h3>
+                        <div class="table-wrapper">
+                            <table id="dataPreviewTable" class="data-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Selection Section -->
+        <section class="section hidden" id="featureSelectionSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>3. Feature Selection</h2>
+                </div>
+                <div class="card__body">
+                    <p>Select which columns to use as features for forecasting:</p>
+                    <div id="featureCheckboxes" class="feature-checkboxes"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Model Selection Section -->
+        <section class="section hidden" id="modelSelectionSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>4. Model Selection</h2>
+                </div>
+                <div class="card__body">
+                    <div class="model-selection">
+                        <label class="form-label">Choose Forecasting Models (select multiple):</label>
+                        <div class="model-checkboxes">
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="linear_regression" checked>
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>Linear Regression</strong>
+                                    <span class="model-desc">Simple linear relationship between target and one predictor</span>
+                                </div>
+                            </label>
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="multiple_regression" checked>
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>Multiple Linear Regression</strong>
+                                    <span class="model-desc">Linear relationship with multiple predictors</span>
+                                </div>
+                            </label>
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="arima">
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>ARIMA</strong>
+                                    <span class="model-desc">Autoregressive Integrated Moving Average for time series</span>
+                                </div>
+                            </label>
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="exponential_smoothing">
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>Exponential Smoothing</strong>
+                                    <span class="model-desc">Weighted averages with exponentially decaying weights</span>
+                                </div>
+                            </label>
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="var">
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>VAR</strong>
+                                    <span class="model-desc">Vector Autoregression for multivariate time series</span>
+                                </div>
+                            </label>
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="decision_tree">
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>Decision Tree</strong>
+                                    <span class="model-desc">Tree-based model with recursive binary splits</span>
+                                </div>
+                            </label>
+                            <label class="model-checkbox">
+                                <input type="checkbox" value="random_forest">
+                                <span class="checkmark"></span>
+                                <div class="model-info">
+                                    <strong>Random Forest</strong>
+                                    <span class="model-desc">Ensemble of decision trees with bootstrap aggregation</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Configuration Section -->
+        <section class="section hidden" id="configSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>5. Forecasting Configuration</h2>
+                </div>
+                <div class="card__body">
+                    <div class="config-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="forecastPeriods">Number of periods to forecast:</label>
+                            <input type="number" id="forecastPeriods" class="form-control" min="1" max="20" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="trainTestSplit">Train/Test Split (%):</label>
+                            <input type="range" id="trainTestSplit" min="60" max="90" value="80" class="slider">
+                            <span id="splitValue" class="slider-value">80% / 20%</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="includeConfidence" checked>
+                                <span class="checkmark"></span>
+                                Include confidence intervals
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="run-section">
+                        <button id="runForecasting" class="btn btn--primary btn--lg">
+                            <span class="btn-text">Run Forecasting</span>
+                            <span class="btn-spinner hidden">⏳</span>
+                        </button>
+                        <div id="progress" class="progress-text hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="section hidden" id="resultsSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>6. Forecasting Results</h2>
+                    <div class="export-buttons">
+                        <button id="exportResults" class="btn btn--outline btn--sm">Export Results (CSV)</button>
+                        <button id="exportChart" class="btn btn--outline btn--sm">Export Chart (PNG)</button>
+                    </div>
+                </div>
+                <div class="card__body">
+                    <div class="results-grid">
+                        <div class="results-table-container">
+                            <h3>Model Performance Metrics</h3>
+                            <div class="table-wrapper">
+                                <table id="resultsTable" class="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Model</th>
+                                            <th>Train RMSE</th>
+                                            <th>Test RMSE</th>
+                                            <th>Train MAE</th>
+                                            <th>Test MAE</th>
+                                            <th>Train R²</th>
+                                            <th>Test R²</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="forecast-table-container">
+                            <h3>Forecast Values</h3>
+                            <div class="table-wrapper">
+                                <table id="forecastTable" class="forecast-table">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualization Section -->
+        <section class="section hidden" id="visualizationSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>7. Visualization</h2>
+                </div>
+                <div class="card__body">
+                    <div class="chart-container" style="position: relative; height: 500px;">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                    <div class="chart-legend" id="chartLegend"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Model Comparison Section -->
+        <section class="section hidden" id="comparisonSection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>8. Model Comparison & Recommendation</h2>
+                </div>
+                <div class="card__body">
+                    <div class="comparison-grid">
+                        <div class="best-model" id="bestModel"></div>
+                        <div class="performance-chart-container">
+                            <h3>Performance Comparison</h3>
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
